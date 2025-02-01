@@ -1,7 +1,6 @@
 package deque;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 public class LinkedListDeque61B<T> implements Deque61B<T> {
@@ -26,12 +25,6 @@ public class LinkedListDeque61B<T> implements Deque61B<T> {
         sentinel = new Node(null, null, null);
         size = 0;
     }
-
-   /* public LinkedListDeque61B(T x){
-        sentinel = new Node(null, sentinel, sentinel);
-        sentinel.next = new Node(x, sentinel, sentinel);
-        size = 1;
-    } */
 
     @Override
     public void addFirst(T x) {
