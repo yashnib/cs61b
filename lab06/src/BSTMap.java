@@ -65,7 +65,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
         putHelper(root, key, value);
     }
 
-    private V getHelper(BSTNode node, K key){
+    private V get(BSTNode node, K key){
         if (node == null || node.key == null){
             return null;
         }
@@ -74,7 +74,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
         if (cmp == 0) {
             return node.value;
         }
-        return getHelper(cmp < 0 ? node.right : node.left, key);
+        return get(cmp < 0 ? node.right : node.left, key);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V>{
             return null;
         }
 
-        return getHelper(root, key);
+        return get(root, key);
     }
 
     private boolean containsKeyHelper(BSTNode node, K key){
