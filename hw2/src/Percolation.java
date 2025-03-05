@@ -44,7 +44,7 @@ public class Percolation {
 
         // If element is in the top row, union it with the virtual top
         if (row == 0) {
-            cellDisjointSet.union(index, virtualTopSetIndex);;
+            cellDisjointSet.union(index, virtualTopSetIndex);
         }
 
         unionWithOpenNeighbors(row, col, index);
