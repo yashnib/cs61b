@@ -5,159 +5,174 @@ import tileengine.Tileset;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class Dungeon extends Room {
-    private Dungeon firstChild, secondChild;
-    private final Random dungeonRNG;
-    private final int seed;
-    private Room room;
-    private List<Room> hallways;
 
-    public Dungeon(int width, int height, Point position, int seed) {
-        super(width, height, position);
-        dungeonRNG = new Random(seed);
-        firstChild = null;
-        secondChild = null;
+    private static int MIN_DIMENSION = 5;
+    private static int MAX_DIMENSION = 8;;
+
+    private static int trimDungeon = 1;
+    private static int corridorMargin = 1;
+    private static int minCorridorThickness = 2;
+
+    private boolean splitHorizontal;
+    private boolean splitVertical;
+
+    private Dungeon leftDungeon;
+    private Dungeon rightDungeon;
+
+    private Map<Dungeon, Dungeon> siblings;
+
+    Random dungeonRNG;
+
+    private int seed;
+
+    List<Room> hallways;
+
+    int left, right, top, bottom;
+
+    public Dungeon(int left, int right, int top, int bottom, Random rng) {
+        super(left, right, top, bottom);
+        if (getHeight() < MIN_DIMENSION) {
+            throw new IllegalArgumentException("Room too short");
+        }
+        if (getWidth() < MIN_DIMENSION) {
+            throw new IllegalArgumentException("Room too thin");
+        }
+
+        this.dungeonRNG = rng;
+
+        leftDungeon = null;
+        rightDungeon = null;
+
+        splitVertical = false;
+        splitHorizontal = false;
+
         this.seed = seed;
-        room = null;
-        hallways = new ArrayList<>();
+
+        this.left = left;
+        this.right = right;
+        this.top = top;
+        this.bottom = bottom;
     }
 
     public boolean isLeaf () {
-        return firstChild == null && secondChild == null;
+        return !splitVertical && !splitHorizontal;
     }
 
-    public Dungeon splitDungeon(int minRoomSize, Dungeon subDungeon, Random dungeonRNG) {
-        if (!subDungeon.isLeaf()) {
-            return subDungeon;
-        }
+    private void connectSiblingsHorizontal() {
 
-        // To create the sub-dungeons, choose a vertical or horizontal split based on the proportions
-        // of the main dungeon, if it is too wide, split horizontally, if it is too long, split vertically.
-        // If the main dungeon is a square, split it horizontally or vertically.
-        boolean splitVertical;
-        int subDungeonWidth = subDungeon.getWidth();
-        int subDungeonHeight = subDungeon.getHeight();
-        int subDungeonX = subDungeon.getX();
-        int subDungeonY = subDungeon.getY();
-
-        if ((double) subDungeonWidth / subDungeonHeight >= 1.25) {
-            splitVertical = false;
-        } else if ((double) subDungeonHeight / subDungeonWidth >= 1.25) {
-            splitVertical = true;
-        } else {
-            splitVertical = dungeonRNG.nextBoolean();
-        }
-
-        if (subDungeonWidth < 2 * minRoomSize || subDungeonHeight < 2 * minRoomSize) {
-            return subDungeon;
-        }
-
-        if (splitVertical) {
-            int splitDimension = dungeonRNG.nextInt(minRoomSize, subDungeonWidth - minRoomSize);
-
-            Point firstChildPosition = new Point(subDungeonX, subDungeonY);
-            subDungeon.firstChild = new Dungeon(subDungeonWidth, splitDimension, firstChildPosition, getSeed());
-
-            Point secondChildPosition = new Point(subDungeonX, subDungeonY + splitDimension);
-            subDungeon.secondChild = new Dungeon(subDungeonWidth, subDungeonHeight - splitDimension, secondChildPosition, getSeed());
-        } else {
-            int splitDimension = dungeonRNG.nextInt(minRoomSize, subDungeonHeight - minRoomSize);
-
-            Point firstChildPosition = new Point(subDungeonX, subDungeonY);
-            subDungeon.firstChild = new Dungeon(splitDimension, subDungeonHeight, firstChildPosition, getSeed());
-
-            Point secondChildPosition = new Point(subDungeonX + splitDimension, subDungeonY);
-            subDungeon.secondChild = new Dungeon(subDungeonWidth - splitDimension, subDungeonHeight, secondChildPosition, getSeed());
-        }
-
-        return true;
     }
 
-   /* public void createBSP(Dungeon subDungeon) {
-        if (subDungeon.isLeaf()) {
-            int minRoomSize = subDungeon.getMinDimension();
-            int dungeonWidth = subDungeon.getWidth();
-            int dungeonHeight = subDungeon.getHeight();
-            if (dungeonWidth > 2 * minRoomSize || dungeonHeight > 2 * minRoomSize) {
-                if (splitDungeon(minRoomSize, subDungeon, subDungeon.getRNG())) {
-                    createBSP(subDungeon.firstChild);
-                    createBSP(subDungeon.secondChild);
-                }
-            } else  {
-                return;
-            }
-        }
-        return;
-    } */
+    private void horizontalSplit() {
+        int left = getLeft();
+        int right = getRight();
+        int top = getTop();
+        int bottom = getBottom();
+        if (top - MIN_DIMENSION <= bottom + MIN_DIMENSION) return;
+        int splitPoint = dungeonRNG.nextInt(bottom + MIN_DIMENSION, top - MIN_DIMENSION);
+        Random leftRNG = new Random(dungeonRNG.nextLong());
+        leftDungeon = new Dungeon(left, right, splitPoint, bottom, leftRNG);
 
-    public void createRoom(Dungeon subDungeon) {
-        if (subDungeon.isLeaf()) {
-            int dungeonWidth = subDungeon.getWidth();
-            int dungeonHeight = subDungeon.getHeight();
-            int dungeonX = subDungeon.getX();
-            int dungeonY = subDungeon.getY();
-            int roomWidth = dungeonRNG.nextInt(dungeonWidth / 2, dungeonWidth - 2);
-            int roomHeight = dungeonRNG.nextInt(dungeonHeight / 2, dungeonHeight - 2);
-            int roomX = dungeonRNG.nextInt(1, dungeonWidth - roomWidth - 1);
-            int roomY = dungeonRNG.nextInt(1, dungeonHeight - roomHeight - 1);
-            Point roomPosition = new Point(dungeonX + roomX, dungeonY + roomY);
-            subDungeon.setRoom(new Room(roomWidth, roomHeight, roomPosition));
-        } else {
-            createRoom(subDungeon.firstChild);
-            createRoom(subDungeon.secondChild);
-        }
+        Random rightRNG = new Random(dungeonRNG.nextLong());
+        rightDungeon = new Dungeon(left, right, top, splitPoint + 1, rightRNG);
+
+        leftDungeon.splitDungeon();
+        rightDungeon.splitDungeon();
+        splitHorizontal = true;
+
+        connectSiblingsHorizontal(leftDungeon, rightDungeon);
     }
 
-    public Room getRoom(Dungeon subDungeon) {
-        if (subDungeon.isLeaf()) {
-            return getRoom(subDungeon);
-        }
+    private void connectSiblingsVertical() {
 
-        Room leftRoom = getRoom(subDungeon.firstChild);
-        if (leftRoom != null) {
-            return leftRoom;
-        }
-
-        return getRoom(subDungeon.secondChild);
     }
 
-    public void drawRooms(TETile[][] tiles, Dungeon subDungeon) {
-        if (subDungeon == null) {
+    private void verticalSplit() {
+        int left = getLeft();
+        int right = getRight();
+        int top = getTop();
+        int bottom = getBottom();
+        if (right - MIN_DIMENSION <= left + MIN_DIMENSION) return;
+        int splitPoint = dungeonRNG.nextInt(left + MIN_DIMENSION, right - MIN_DIMENSION);
+
+        Random leftRNG = new Random(dungeonRNG.nextLong());
+        leftDungeon = new Dungeon(left, splitPoint, top, bottom, leftRNG);
+
+        Random rightRNG = new Random(dungeonRNG.nextLong());
+        rightDungeon = new Dungeon(splitPoint + 1, right, top, bottom, rightRNG);
+        leftDungeon.splitDungeon();
+        rightDungeon.splitDungeon();
+        splitVertical = true;
+
+        connectSiblingsVertical(leftDungeon, rightDungeon);
+    }
+
+    public void splitDungeon() {
+        float rand = dungeonRNG.nextFloat();
+        if (rand < 0.5f && getWidth() >= 2 * MIN_DIMENSION) {
+            verticalSplit();
+            return;
+        }
+        else if (getHeight() >= 2 * MIN_DIMENSION) {
+            horizontalSplit();
             return;
         }
 
-        if (subDungeon.isLeaf()) {
-            Room dungeonRoom = getRoom(subDungeon);
-            int dungeonRoomX = dungeonRoom.getX();
-            int dungeonRoomY = dungeonRoom.getY();
-            int dungeonRoomWidth = dungeonRoom.getWidth();
-            int dungeonRoomHeight = dungeonRoom.getHeight();
-            for (int i = dungeonRoomX; i < dungeonRoomX + dungeonRoomWidth; i++) {
-                for (int j = dungeonRoomY; j < dungeonRoomY + dungeonRoomHeight; j++) {
+        // Force split if there is too much space.
+        if (getWidth() > MAX_DIMENSION) {
+            verticalSplit();
+            return;
+        }
+
+        if (getHeight() > MAX_DIMENSION) {
+            horizontalSplit();
+            return;
+        }
+    }
+
+    public void drawDungeon(TETile[][] tiles) {
+        if (isLeaf()) {
+            for (int i = left; i < right; i++) {
+                for (int j = bottom; j < top; j++) {
                     if (i >= 0 && i < tiles.length && j >= 0 && j < tiles[0].length) {
-                        tiles[i][j] = Tileset.SAND;
+                        tiles[i][j] = Tileset.FLOWER;
                     }
                 }
             }
-        }
-        else  {
-            drawRooms(tiles, subDungeon.firstChild);
-            drawRooms(tiles, subDungeon.firstChild);
+        } else {
+            leftDungeon.drawDungeon(tiles);
+            rightDungeon.drawDungeon(tiles);
         }
     }
 
-    public void generateHallways(Dungeon subDungeon) {
-        if (subDungeon == null || subDungeon.isLeaf()) {
-            return;
+    public void trim() {
+        left += trimDungeon;
+        right -= trimDungeon;
+        top -= trimDungeon;
+        bottom += trimDungeon;
+
+        if (leftDungeon != null) {
+            leftDungeon.trim();
+        }
+        if (rightDungeon != null) {
+            rightDungeon.trim();
+        }
+    }
+
+    public void generateHallways() {
+        if (leftDungeon.isLeaf() || rightDungeon.isLeaf()) {
+            ;
+        }
+        else {
+            leftDungeon.generateHallways();
+            rightDungeon.generateHallways();
         }
 
-        Room firstRoom = getRoom(subDungeon.firstChild);
-        Room secondRoom = getRoom(subDungeon.secondChild);
-
         // Pick random points inside each room, avoiding walls (offset by +1 and -1)
-        int firstPointX = dungeonRNG.nextInt(firstRoom.getX() + 1, firstRoom.getX() + firstRoom.getWidth() - 1);
+        int firstPointX = dungeonRNG.nextInt(leftChildRoom.getX() + 1, firstRoom.getX() + firstRoom.getWidth() - 1);
         int firstPointY = dungeonRNG.nextInt(firstRoom.getY() + 1, firstRoom.getY() + firstRoom.getHeight() - 1);
         int secondPointX = dungeonRNG.nextInt(secondRoom.getX() + 1, secondRoom.getX() + secondRoom.getWidth() - 1);
         int secondPointY = dungeonRNG.nextInt(secondRoom.getY() + 1, secondRoom.getY() + secondRoom.getHeight() - 1);
@@ -196,38 +211,8 @@ public class Dungeon extends Room {
         }
     }
 
-    public void drawHallways(TETile[][] tiles, Dungeon subDungeon) {
-        if (subDungeon == null) {
-            return;
-        }
-
-        drawHallways(tiles, subDungeon.firstChild);
-        drawHallways(tiles, subDungeon.secondChild);
-
-        for (Room hallway : subDungeon.getHallways()) {
-            for (int i = hallway.getX(); i < hallway.getX() + hallway.getWidth(); i++) {
-                for (int j = hallway.getY(); j < hallway.getY() + hallway.getHeight(); j++) {
-                    if (i >= 0 && i < tiles.length && j >= 0 && j < tiles[0].length) {
-                        tiles[i][j] = Tileset.WATER;
-                    }
-                }
-            }
-        }
-    }
-
-    public void setRoom(Room room) {
-        this.room = room;
-    }
-
     public int getSeed() {
-        return seed;
+        return this.seed;
     }
 
-    public Random getRNG() {
-        return dungeonRNG;
-    }
-
-    public List<Room> getHallways() {
-        return hallways;
-    }
 }

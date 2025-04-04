@@ -7,9 +7,9 @@ import core.Dungeon;
 import java.util.*;
 
 public class Main {
-    private static final int WORLD_WIDTH = 80;
-    private static final int WORLD_HEIGHT = 40;
-    private static final int SEED = 2873123;
+    private static final int WORLD_WIDTH = 100;
+    private static final int WORLD_HEIGHT = 50;
+    private static final long SEED = 2873123;
 
     public static void main(String[] args) {
 
@@ -17,14 +17,17 @@ public class Main {
         ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
         TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
 
-        Point myDungeonPosition = new Point(0, 0);
-        Dungeon myDungeon = new Dungeon(WORLD_WIDTH, WORLD_HEIGHT, myDungeonPosition, SEED);
-        myDungeon.createBSP(myDungeon);
-        myDungeon.createRoom(myDungeon);
+        Random rng = new Random(SEED);
+        Dungeon myDungeon = new Dungeon(0, WORLD_WIDTH,  WORLD_HEIGHT, 0, rng);
+        for (int x = 0; x < WORLD_WIDTH; x++) {
+            for (int y = 0; y < WORLD_HEIGHT; y++) {
+                world[x][y] = Tileset.NOTHING;
+            }
+        }
 
-        myDungeon.generateHallways(myDungeon);
-       myDungeon.drawRooms(world, myDungeon);
-      myDungeon.drawHallways(world, myDungeon);
+        myDungeon.splitDungeon();
+        myDungeon.trim();
+        myDungeon.drawDungeon(world);
 
         ter.renderFrame(world);
     }
