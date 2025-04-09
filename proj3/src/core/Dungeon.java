@@ -14,6 +14,8 @@ public class Dungeon extends Room {
 
     private static List<Room> hallways;
 
+    private Point dungeonPosition;
+
     private Room room;
 
     private static Set<Room> hallwaysSet = new HashSet<>();
@@ -28,6 +30,8 @@ public class Dungeon extends Room {
         childA = null;
         childB = null;
 
+        dungeonPosition = position;
+
         room = null;
     }
 
@@ -40,7 +44,7 @@ public class Dungeon extends Room {
     }
 
     private void splitDungeonVertical() {
-        if (this == null) throw new IllegalArgumentException("Dungeon instance is null");
+        if (this == null) return;
 
         int parentDungeonHeight = this.getHeight();
         int parentDungeonWidth = this.getWidth();
@@ -72,7 +76,7 @@ public class Dungeon extends Room {
     }
 
     private void splitDungeonHorizontal() {
-        if (this == null) throw new IllegalArgumentException("Dungeon instance is null");
+        if (this == null) return;
 
         int parentDungeonHeight = this.getHeight();
         int parentDungeonWidth = this.getWidth();
@@ -153,7 +157,7 @@ public class Dungeon extends Room {
 
     public void createRoom() {
         if (this == null) {
-            throw new IllegalArgumentException("createRoom(): Dungeon instance is null");
+            return;
         }
 
         if (this.isLeaf()) {
@@ -257,7 +261,7 @@ public class Dungeon extends Room {
 
     public void createHallways() {
        if (this == null || this.isLeaf()) {
-            throw new IllegalArgumentException("createHallways(): Dungeon instance is null");
+            return;
         }
 
         Room childARoom = this.childA.getRoom();
