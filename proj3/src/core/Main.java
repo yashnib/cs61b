@@ -9,7 +9,7 @@ import java.util.*;
 public class Main {
     private static final int WORLD_WIDTH = 100;
     private static final int WORLD_HEIGHT = 50;
-    private static final long SEED = 34786;
+    private static final long SEED = 9088;
 
     public static void main(String[] args) {
 
@@ -26,9 +26,9 @@ public class Main {
             }
         }
 
-        myDungeon.splitDungeon(myDungeon);
-        myDungeon.createRoom(myDungeon);
-        myDungeon.createHallways(myDungeon);
+        myDungeon.splitDungeon();
+        myDungeon.createRoom();
+        myDungeon.createHallways();
         myDungeon.drawRooms(world);
         myDungeon.drawHallways(world);
         myDungeon.drawWalls(world);

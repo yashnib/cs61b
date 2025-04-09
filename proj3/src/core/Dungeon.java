@@ -43,87 +43,79 @@ public class Dungeon extends Room {
         this.room = room;
     }
 
-    public Room getRoom() {
-        return room;
-    }
+    private void splitDungeonVertical() {
+        if (this == null) throw new IllegalArgumentException("Dungeon instance is null");
 
-    private Dungeon splitDungeonVertical(Dungeon parentDungeon) {
-        if (parentDungeon == null) return null;
-
-        int parentDungeonHeight = parentDungeon.getHeight();
-        int parentDungeonWidth = parentDungeon.getWidth();
-        int parentDungeonY = parentDungeon.getY();
-        int parentDungeonX = parentDungeon.getX();
-        int minDimension = parentDungeon.getMinRoomDimension();
+        int parentDungeonHeight = this.getHeight();
+        int parentDungeonWidth = this.getWidth();
+        int parentDungeonY = this.getY();
+        int parentDungeonX = this.getX();
+        int minDimension = this.getMinRoomDimension();
 
         if (parentDungeonHeight <= 3 * minDimension) {
-            return parentDungeon;
+            return;
         }
 
         int minSplitY = parentDungeonY + minDimension;
         int maxSplitY = parentDungeonY + parentDungeonHeight - minDimension;
         if (minSplitY >= maxSplitY) {
-            return parentDungeon;
+            return;
         }
-        int splitY = parentDungeon.dungeonRNG.nextInt(minSplitY, maxSplitY);
+        int splitY = this.dungeonRNG.nextInt(minSplitY, maxSplitY);
 
         // Two children will be generated from the split with both having the same width but different heights
         Point childAPosition = new Point(parentDungeonX, parentDungeonY);
-        Random childARNG = new Random(parentDungeon.dungeonRNG.nextLong());
-        parentDungeon.childA = new Dungeon(parentDungeonWidth, splitY - parentDungeonY, childAPosition,false, childARNG);
-        parentDungeon.childA = splitDungeon(parentDungeon.childA);
+        Random childARNG = new Random(this.dungeonRNG.nextLong());
+        this.childA = new Dungeon(parentDungeonWidth, splitY - parentDungeonY, childAPosition,false, childARNG);
+        this.childA = this.childA.splitDungeon();
 
         Point childBPosition = new Point(parentDungeonX, splitY);
-        Random childBRNG = new Random(parentDungeon.dungeonRNG.nextLong());
-        parentDungeon.childB = new Dungeon(parentDungeonWidth, parentDungeonY + parentDungeonHeight - splitY, childBPosition, false, childBRNG);
-        parentDungeon.childB = splitDungeon(parentDungeon.childB);
-
-        return parentDungeon;
+        Random childBRNG = new Random(this.dungeonRNG.nextLong());
+        this.childB = new Dungeon(parentDungeonWidth, parentDungeonY + parentDungeonHeight - splitY, childBPosition, false, childBRNG);
+        this.childB = this.childB.splitDungeon();
     }
 
-    private Dungeon splitDungeonHorizontal(Dungeon parentDungeon) {
-        if (parentDungeon == null) return null;
+    private void splitDungeonHorizontal() {
+        if (this == null) throw new IllegalArgumentException("Dungeon instance is null");
 
-        int parentDungeonHeight = parentDungeon.getHeight();
-        int parentDungeonWidth = parentDungeon.getWidth();
-        int parentDungeonY = parentDungeon.getY();
-        int parentDungeonX = parentDungeon.getX();
-        int minDimension = parentDungeon.getMinRoomDimension();
+        int parentDungeonHeight = this.getHeight();
+        int parentDungeonWidth = this.getWidth();
+        int parentDungeonY = this.getY();
+        int parentDungeonX = this.getX();
+        int minDimension = this.getMinRoomDimension();
 
         if (parentDungeonWidth <= 3 * minDimension) {
-            return parentDungeon;
+            return;
         }
 
         int minSplitX = parentDungeonX + minDimension;
         int maxSplitX = parentDungeonX + parentDungeonWidth - minDimension;
-        int splitX = parentDungeon.dungeonRNG.nextInt(minSplitX, maxSplitX);
+        int splitX = this.dungeonRNG.nextInt(minSplitX, maxSplitX);
 
         if (minSplitX >= maxSplitX) {
-            return parentDungeon;
+            return;
         }
 
         // Two children will be generated from the split with both having the same height but different widths
         Point childAPosition = new Point(parentDungeonX, parentDungeonY);
-        Random childARNG = new Random(parentDungeon.dungeonRNG.nextLong());
-        parentDungeon.childA = new Dungeon(splitX - parentDungeonX, parentDungeonHeight, childAPosition, false, childARNG);
-        parentDungeon.childA = splitDungeon(parentDungeon.childA);
+        Random childARNG = new Random(this.dungeonRNG.nextLong());
+        this.childA = new Dungeon(splitX - parentDungeonX, parentDungeonHeight, childAPosition, false, childARNG);
+        this.childA = this.childA.splitDungeon();
 
         Point childBPosition = new Point(splitX, parentDungeonY);
-        Random childBRNG = new Random(parentDungeon.dungeonRNG.nextLong());
-        parentDungeon.childB = new Dungeon(parentDungeonX + parentDungeonWidth - splitX, parentDungeonHeight, childBPosition, false, childBRNG);
-        parentDungeon.childB = splitDungeon(parentDungeon.childB);
-
-        return parentDungeon;
+        Random childBRNG = new Random(this.dungeonRNG.nextLong());
+        this.childB = new Dungeon(parentDungeonX + parentDungeonWidth - splitX, parentDungeonHeight, childBPosition, false, childBRNG);
+        this.childB = this.childB.splitDungeon();
     }
 
-    public Dungeon splitDungeon(Dungeon parentDungeon) {
-        if (parentDungeon == null) return null;
+    public Dungeon splitDungeon() {
+        if (this== null) throw new IllegalArgumentException("splitDungeon(): Dungeon instance is null");
 
-        int minDimension = parentDungeon.getMinRoomDimension();
+        int minDimension = this.getMinRoomDimension();
 
-        if ((parentDungeon.getWidth() <= 3 * minDimension && parentDungeon.getHeight() <= 3 * minDimension)) {
+        if ((this.getWidth() <= 3 * minDimension && this.getHeight() <= 3 * minDimension)) {
           //  parentDungeon.leaf = true;
-            return parentDungeon;
+            return this;
         }
 
         enum Direction {
@@ -134,61 +126,60 @@ public class Dungeon extends Room {
         Direction splitDirection;
 
         // Split the dungeon vertically if is narrower than 2 * minDimension and split is horizontally if is shorter than 2 * minDimension
-        if (parentDungeon.getWidth() <= 3 * minDimension) {
+        if (this.getWidth() <= 3 * minDimension) {
             splitDirection = Direction.VERTICAL;
-        } else if (parentDungeon.getHeight() <= 3 * minDimension) {
+        } else if (this.getHeight() <= 3 * minDimension) {
             splitDirection = Direction.HORIZONTAL;
         } else {
-            splitDirection = parentDungeon.dungeonRNG.nextBoolean() ? Direction.VERTICAL : Direction.HORIZONTAL;
+            splitDirection = this.dungeonRNG.nextBoolean() ? Direction.VERTICAL : Direction.HORIZONTAL;
         }
 
         if (splitDirection == Direction.VERTICAL) {
-            parentDungeon = splitDungeonVertical(parentDungeon);
+            this.splitDungeonVertical();
         } else {
-            parentDungeon = splitDungeonHorizontal(parentDungeon);
+            this.splitDungeonHorizontal();
         }
 
-        return parentDungeon;
+        return this;
     }
 
-    public Room getRoom(Dungeon parentDungeon) {
-        if (parentDungeon == null) {
-            return null;
+    public Room getRoom() {
+        if (this == null) {
+            throw new IllegalArgumentException("Dungeon instance is null");
         }
 
-        if (parentDungeon.isLeaf() && parentDungeon.room != null) {
-            return parentDungeon.room;
+        if (this.isLeaf() && this.room != null) {
+            return this.room;
         }
 
-        return getRoom(parentDungeon.childB);
+        return this.childB.getRoom();
     }
 
-    public void createRoom(Dungeon parentDungeon) {
-        if (parentDungeon == null) {
-            return;
+    public void createRoom() {
+        if (this == null) {
+            throw new IllegalArgumentException("createRoom(): Dungeon instance is null");
         }
 
-        if (parentDungeon.isLeaf()) {
+        if (this.isLeaf()) {
             int roomWidth, roomHeight;
-            roomWidth = parentDungeon.getWidth() / 2;
-            roomHeight = parentDungeon.getHeight() / 2;
+            roomWidth = this.getWidth() / 2;
+            roomHeight = this.getHeight() / 2;
 
-            int roomX = parentDungeon.getX();
-            int roomY = parentDungeon.getY();
+            int roomX = this.getX();
+            int roomY = this.getY();
 
             Point roomPosition = new Point(roomX, roomY);
-            parentDungeon.room = new Room(roomWidth, roomHeight, roomPosition, false);
-            roomsSet.add(parentDungeon.room);
+            this.room = new Room(roomWidth, roomHeight, roomPosition, false);
+            roomsSet.add(this.room);
         } else {
-            createRoom(parentDungeon.childA);
-            createRoom(parentDungeon.childB);
+            this.childA.createRoom();
+            this.childB.createRoom();
         }
     }
 
     public void connectRooms(Room roomA, Room roomB) {
-
         if (roomA == null || roomB == null) {
-            return;
+            throw new IllegalArgumentException("connectRooms(): room arguments cannot be null");
         }
 
         int roomAX = roomA.getX() + 2;
@@ -234,6 +225,9 @@ public class Dungeon extends Room {
     }
 
     public void drawHallways(TETile[][] tiles) {
+        if (tiles == null) {
+            throw new IllegalArgumentException("drawHallways(): World cannot be null");
+        }
         for (Room r : hallwaysSet) {
             if (r.getDrawOpposite()) {
                 for (int i = r.getX(); i > r.getX() - r.getWidth(); i--) {
@@ -252,6 +246,9 @@ public class Dungeon extends Room {
     }
 
    public void drawRooms(TETile[][] tiles) {
+        if (tiles == null) {
+            throw new IllegalArgumentException("drawRooms(): World cannot be null");
+        }
         for (Room r : roomsSet) {
            // if (r.getWidth() == 1) continue;
             for (int i = r.getX(); i < r.getX() + r.getWidth(); i++) {
@@ -262,22 +259,26 @@ public class Dungeon extends Room {
         }
     }
 
-    public void createHallways(Dungeon parentDungeon) {
-        if (parentDungeon == null || parentDungeon.isLeaf()) {
-            return;
+    public void createHallways() {
+       if (this == null || this.isLeaf()) {
+            throw new IllegalArgumentException("createHallways(): Dungeon instance is null");
         }
 
-        Room childARoom = getRoom(parentDungeon.childA);
-        Room childBRoom = getRoom(parentDungeon.childB);
+        Room childARoom = this.childA.getRoom();
+        Room childBRoom = this.childB.getRoom();
 
         connectRooms(childARoom, childBRoom);
 
-        createHallways(parentDungeon.childA);
-        createHallways(parentDungeon.childB);
+        this.childA.createHallways();
+        this.childB.createHallways();
 
     }
 
     public void drawWalls(TETile[][] tiles) {
+        if (tiles == null) {
+            return;
+        }
+
         for (int i = 0; i < tiles.length; i++) {
             for (int j = 0; j < tiles[0].length; j++) {
                 if (tiles[i][j] == Tileset.FLOWER) {
