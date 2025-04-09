@@ -5,6 +5,13 @@ public class Point {
     private final int y;
 
     public Point(int x, int y) {
+        if (x < 0) {
+            throw new IllegalArgumentException("The x-coordinate must be a non-negative integer");
+        }
+        if (y < 0) {
+            throw new IllegalArgumentException("The y-coordinate must be non-negative integer");
+        }
+
         this.x = x;
         this.y = y;
     }

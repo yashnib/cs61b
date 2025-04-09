@@ -3,78 +3,115 @@ package core;
 public class Room {
 
     private final int MAX_ROOM_DIMENSION = 8;
-    private final int MIN_ROOM_DIMENSION = 3;
+    private final int MIN_ROOM_DIMENSION = 5;
 
-    private final int left;
-    private final int right;
-    private final int top;
-    private final int bottom;
+    private int width;
+    private int height;
+    private final Point position;
+    private static int id = 0;
+    private final int roomID;
 
-    public Room(int left, int right, int top, int bottom) {
-        if (left < 0) {
-            throw new IllegalArgumentException("Left must be a non-negative integer");
-        }
-        if (right < 0) {
-            throw new IllegalArgumentException("Right must be a non-negative integer");
-        }
-        if (top < 0) {
-            throw new IllegalArgumentException("Top must be a non-negative integer");
-        }
-        if (bottom < 0) {
-            throw new IllegalArgumentException("Bottom must be a non-negative integer");
-        }
-        if (left >= right) {
-            throw new IllegalArgumentException("Left must be smaller than right");
-        }
-        if (bottom >= top) {
-            throw new IllegalArgumentException("Bottom must be smaller than top");
+    private boolean isHorizontallySplit;
+    private boolean isVerticallySplit;
+
+    private boolean hasHorizontalHallway;
+    private boolean hasVerticalHallway;
+
+    public Room(int width, int height, Point position, boolean isHorizontallySplit, boolean isVerticallySplit) {
+        if (width <= 0) {
+            throw new IllegalArgumentException("Width must be a positive integer");
         }
 
-        this.left = left;
-        this.right = right;
-        this.top = top;
-        this.bottom = bottom;
+        if (height <= 0) {
+            throw new IllegalArgumentException("Height must be a positive integer");
+        }
+        this.width = width;
+        this.height = height;
+        this.position = position;
+        this.isHorizontallySplit = isHorizontallySplit;
+        this.isVerticallySplit = isVerticallySplit;
+        hasHorizontalHallway = false;
+        hasVerticalHallway = false;
+        roomID = Room.id;
+        Room.id += 1;
     }
 
     public int getWidth() {
-        return right - left + 1;
+        return width;
     };
 
     public int getHeight() {
-        return top - bottom + 1;
+        return height;
     }
 
-    public int getTop() {
-        return top;
+    public int getX() {
+        return position.getX();
     }
 
-    public int getBottom() {
-        return bottom;
+    public int getY() {
+        return position.getY();
     }
 
-    public int getLeft() {
-        return left;
+    public boolean getHorizontalHallway() {
+        return hasHorizontalHallway;
     }
 
-    public int getRight() {
-        return right;
+    public boolean getVerticalHallway() {
+        return hasVerticalHallway;
     }
 
+    public void setHorizontalHallway() {
+        hasHorizontalHallway = true;
+    }
+
+    public void setVerticalHallway() {
+        hasVerticalHallway = true;
+    }
+
+    public void setHorizontalSplit() {
+        isHorizontallySplit = true;
+    }
+
+    public void setVerticalSplit() {
+        isVerticallySplit = true;
+    }
+
+    public boolean getHorizontalSplit() {
+        return isHorizontallySplit;
+    }
+
+    public boolean getVerticalSplit() {
+        return isVerticallySplit;
+    }
+
+    public void makeIntersection() {
+        this.width = 1;
+        this.height = 1;
+    }
+
+    public void setHeight() {
+    }
+    public int getMinRoomDimension() {
+        return MIN_ROOM_DIMENSION;
+    }
+
+    public int getID() {
+        return roomID;
+    }
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null) return false;
         if (getClass() != obj.getClass()) return false;
 
         Room other = (Room) obj;
-        return left == other.getLeft() && right == other.getRight() && top == other.getTop() && bottom == other.getBottom();
+        return getX() == other.getX() && getY() == other.getY() && width == other.getWidth() && height == other.getHeight();
     }
 
     public int hashCode() {
         int result = 17;
-        result = 31 * result + Integer.hashCode(left);
-        result = 31 * result + Integer.hashCode(right);
-        result = 31 * result + Integer.hashCode(top);
-        result = 31 * result + Integer.hashCode(bottom);
+        result = 31 * result + Integer.hashCode(width);
+        result = 31 * result + Integer.hashCode(height);
+        result = 31 * result + position.hashCode();
         return result;
     }
 }
