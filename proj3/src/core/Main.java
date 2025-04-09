@@ -9,7 +9,7 @@ import java.util.*;
 public class Main {
     private static final int WORLD_WIDTH = 100;
     private static final int WORLD_HEIGHT = 50;
-    private static final long SEED = 345698889;
+    private static final long SEED = 34786;
 
     public static void main(String[] args) {
 
@@ -19,7 +19,7 @@ public class Main {
 
         Random rng = new Random(SEED);
         Point worldPosition = new Point(1, 1);
-        Dungeon myDungeon = new Dungeon( WORLD_WIDTH,  WORLD_HEIGHT, worldPosition, false, false, rng);
+        Dungeon myDungeon = new Dungeon( WORLD_WIDTH,  WORLD_HEIGHT, worldPosition, false, rng);
         for (int x = 0; x < WORLD_WIDTH; x++) {
             for (int y = 0; y < WORLD_HEIGHT; y++) {
                 world[x][y] = Tileset.NOTHING;
@@ -29,11 +29,9 @@ public class Main {
         myDungeon.splitDungeon(myDungeon);
         myDungeon.createRoom(myDungeon);
         myDungeon.createHallways(myDungeon);
-        myDungeon.getIntersectingHallwayRooms();
-        myDungeon.createLshapedHallways();
         myDungeon.drawRooms(world);
         myDungeon.drawHallways(world);
-       // myDungeon.drawWalls(world);
+        myDungeon.drawWalls(world);
 
         ter.renderFrame(world);
     }

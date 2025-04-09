@@ -8,16 +8,13 @@ public class Room {
     private int width;
     private int height;
     private final Point position;
-    private static int id = 0;
-    private final int roomID;
 
     private boolean isHorizontallySplit;
     private boolean isVerticallySplit;
 
-    private boolean hasHorizontalHallway;
-    private boolean hasVerticalHallway;
+    private final boolean drawOpposite;
 
-    public Room(int width, int height, Point position, boolean isHorizontallySplit, boolean isVerticallySplit) {
+    public Room(int width, int height, Point position, boolean drawOpposite) {
         if (width <= 0) {
             throw new IllegalArgumentException("Width must be a positive integer");
         }
@@ -28,12 +25,7 @@ public class Room {
         this.width = width;
         this.height = height;
         this.position = position;
-        this.isHorizontallySplit = isHorizontallySplit;
-        this.isVerticallySplit = isVerticallySplit;
-        hasHorizontalHallway = false;
-        hasVerticalHallway = false;
-        roomID = Room.id;
-        Room.id += 1;
+        this.drawOpposite = drawOpposite;
     }
 
     public int getWidth() {
@@ -52,52 +44,14 @@ public class Room {
         return position.getY();
     }
 
-    public boolean getHorizontalHallway() {
-        return hasHorizontalHallway;
+    public boolean getDrawOpposite() {
+        return drawOpposite;
     }
 
-    public boolean getVerticalHallway() {
-        return hasVerticalHallway;
-    }
-
-    public void setHorizontalHallway() {
-        hasHorizontalHallway = true;
-    }
-
-    public void setVerticalHallway() {
-        hasVerticalHallway = true;
-    }
-
-    public void setHorizontalSplit() {
-        isHorizontallySplit = true;
-    }
-
-    public void setVerticalSplit() {
-        isVerticallySplit = true;
-    }
-
-    public boolean getHorizontalSplit() {
-        return isHorizontallySplit;
-    }
-
-    public boolean getVerticalSplit() {
-        return isVerticallySplit;
-    }
-
-    public void makeIntersection() {
-        this.width = 1;
-        this.height = 1;
-    }
-
-    public void setHeight() {
-    }
     public int getMinRoomDimension() {
         return MIN_ROOM_DIMENSION;
     }
 
-    public int getID() {
-        return roomID;
-    }
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null) return false;
