@@ -14,8 +14,6 @@ public class Dungeon extends Room {
 
     private static List<Room> hallways;
 
-    private Point dungeonPosition;
-
     private Room room;
 
     private static Set<Room> hallwaysSet = new HashSet<>();
@@ -29,8 +27,6 @@ public class Dungeon extends Room {
 
         childA = null;
         childB = null;
-
-        dungeonPosition = position;
 
         room = null;
     }
