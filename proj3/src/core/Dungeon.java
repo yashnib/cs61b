@@ -1,6 +1,7 @@
 package core;
 
 import edu.princeton.cs.algs4.WeightedQuickUnionUF;
+import tileengine.TERenderer;
 import tileengine.TETile;
 import tileengine.Tileset;
 
@@ -10,11 +11,10 @@ public class Dungeon extends Room {
     private Dungeon childA;
     private Dungeon childB;
 
+    private long dungeonSeed;
     private Random dungeonRNG;
 
     private static List<Room> hallways;
-
-    private Point dungeonPosition;
 
     private Room room;
 
@@ -22,15 +22,18 @@ public class Dungeon extends Room {
 
     private static Set<Room> roomsSet = new HashSet<>();
 
-    public Dungeon(int width, int height, Point position, boolean drawOpposite, Random rng) {
+    private Point avatarPosition;
+
+    private TETile[][] dungeonTiles;
+
+    public Dungeon(int width, int height, Point position, boolean drawOpposite, long seed) {
         super(width, height, position, drawOpposite);
 
-        dungeonRNG = rng;
+        dungeonSeed = seed;
+        dungeonRNG = new Random(seed);
 
         childA = null;
         childB = null;
-
-        dungeonPosition = position;
 
         room = null;
     }
@@ -41,6 +44,14 @@ public class Dungeon extends Room {
 
     public void setRoom(Room room) {
         this.room = room;
+    }
+
+    public void setDungeonTiles(TETile[][] tiles) {
+        dungeonTiles = tiles;
+    }
+
+    public TETile[][] getDungeonTiles() {
+        return dungeonTiles;
     }
 
     private void splitDungeonVertical() {
@@ -65,13 +76,11 @@ public class Dungeon extends Room {
 
         // Two children will be generated from the split with both having the same width but different heights
         Point childAPosition = new Point(parentDungeonX, parentDungeonY);
-        Random childARNG = new Random(this.dungeonRNG.nextLong());
-        this.childA = new Dungeon(parentDungeonWidth, splitY - parentDungeonY, childAPosition,false, childARNG);
+        this.childA = new Dungeon(parentDungeonWidth, splitY - parentDungeonY, childAPosition,false, this.dungeonRNG.nextLong());
         this.childA = this.childA.splitDungeon();
 
         Point childBPosition = new Point(parentDungeonX, splitY);
-        Random childBRNG = new Random(this.dungeonRNG.nextLong());
-        this.childB = new Dungeon(parentDungeonWidth, parentDungeonY + parentDungeonHeight - splitY, childBPosition, false, childBRNG);
+        this.childB = new Dungeon(parentDungeonWidth, parentDungeonY + parentDungeonHeight - splitY, childBPosition, false, this.dungeonRNG.nextLong());
         this.childB = this.childB.splitDungeon();
     }
 
@@ -98,13 +107,11 @@ public class Dungeon extends Room {
 
         // Two children will be generated from the split with both having the same height but different widths
         Point childAPosition = new Point(parentDungeonX, parentDungeonY);
-        Random childARNG = new Random(this.dungeonRNG.nextLong());
-        this.childA = new Dungeon(splitX - parentDungeonX, parentDungeonHeight, childAPosition, false, childARNG);
+        this.childA = new Dungeon(splitX - parentDungeonX, parentDungeonHeight, childAPosition, false, this.dungeonRNG.nextLong());
         this.childA = this.childA.splitDungeon();
 
         Point childBPosition = new Point(splitX, parentDungeonY);
-        Random childBRNG = new Random(this.dungeonRNG.nextLong());
-        this.childB = new Dungeon(parentDungeonX + parentDungeonWidth - splitX, parentDungeonHeight, childBPosition, false, childBRNG);
+        this.childB = new Dungeon(parentDungeonX + parentDungeonWidth - splitX, parentDungeonHeight, childBPosition, false, this.dungeonRNG.nextLong());
         this.childB = this.childB.splitDungeon();
     }
 
@@ -224,36 +231,36 @@ public class Dungeon extends Room {
         }
     }
 
-    public void drawHallways(TETile[][] tiles) {
-        if (tiles == null) {
+    public void drawHallways() {
+        if (dungeonTiles == null) {
             throw new IllegalArgumentException("drawHallways(): World cannot be null");
         }
         for (Room r : hallwaysSet) {
             if (r.getDrawOpposite()) {
                 for (int i = r.getX(); i > r.getX() - r.getWidth(); i--) {
                     for (int j = r.getY(); j > r.getY() - r.getHeight(); j--) {
-                        tiles[i][j] = Tileset.FLOWER;
+                        dungeonTiles[i][j] = Tileset.FLOWER;
                     }
                 }
             } else {
                 for (int i = r.getX(); i < r.getX() + r.getWidth(); i++) {
                     for (int j = r.getY(); j < r.getY() + r.getHeight(); j++) {
-                        tiles[i][j] = Tileset.FLOWER;
+                        dungeonTiles[i][j] = Tileset.FLOWER;
                     }
                  }
             }
         }
     }
 
-   public void drawRooms(TETile[][] tiles) {
-        if (tiles == null) {
+   public void drawRooms() {
+        if (dungeonTiles == null) {
             throw new IllegalArgumentException("drawRooms(): World cannot be null");
         }
         for (Room r : roomsSet) {
            // if (r.getWidth() == 1) continue;
             for (int i = r.getX(); i < r.getX() + r.getWidth(); i++) {
                 for (int j = r.getY(); j < r.getY() + r.getHeight(); j++) {
-                    tiles[i][j] = Tileset.FLOWER;
+                    dungeonTiles[i][j] = Tileset.FLOWER;
                 }
             }
         }
@@ -274,29 +281,52 @@ public class Dungeon extends Room {
 
     }
 
-    public void drawWalls(TETile[][] tiles) {
-        if (tiles == null) {
+    public void drawWalls() {
+        if (dungeonTiles == null) {
             return;
         }
 
-        for (int i = 0; i < tiles.length; i++) {
-            for (int j = 0; j < tiles[0].length; j++) {
-                if (tiles[i][j] == Tileset.FLOWER) {
-                    if (tiles[i - 1][j] == Tileset.NOTHING) {
-                        tiles[i - 1][j] = Tileset.WALL;
+        for (int i = 0; i < dungeonTiles.length; i++) {
+            for (int j = 0; j < dungeonTiles[0].length; j++) {
+                if (dungeonTiles[i][j] == Tileset.FLOWER) {
+                    if (dungeonTiles[i - 1][j] == Tileset.NOTHING) {
+                        dungeonTiles[i - 1][j] = Tileset.WALL;
                     }
-                    if (tiles[i + 1][j] == Tileset.NOTHING) {
-                        tiles[i + 1][j] = Tileset.WALL;
+                    if (dungeonTiles[i + 1][j] == Tileset.NOTHING) {
+                        dungeonTiles[i + 1][j] = Tileset.WALL;
                     }
-                    if (tiles[i][j - 1] ==  Tileset.NOTHING) {
-                        tiles[i][j - 1] = Tileset.WALL;
+                    if (dungeonTiles[i][j - 1] ==  Tileset.NOTHING) {
+                        dungeonTiles[i][j - 1] = Tileset.WALL;
                     }
-                    if (tiles[i][j + 1] == Tileset.NOTHING) {
-                        tiles[i][j + 1] = Tileset.WALL;
+                    if (dungeonTiles[i][j + 1] == Tileset.NOTHING) {
+                        dungeonTiles[i][j + 1] = Tileset.WALL;
                     }
                 }
              }
          }
+    }
+
+    public void placeAvatarRandom() {
+        int avatarX = this.dungeonRNG.nextInt(1, this.getWidth());
+        int avatarY = this.dungeonRNG.nextInt(1, this.getHeight());
+        while (dungeonTiles[avatarX][avatarY] != Tileset.FLOWER) {
+            avatarX = this.dungeonRNG.nextInt(1, this.getWidth());
+            avatarY = this.dungeonRNG.nextInt(1, this.getHeight());
+        }
+        dungeonTiles[avatarX][avatarY] = Tileset.AVATAR;
+        avatarPosition = new Point(avatarX, avatarY);
+    }
+
+    public void placeAvatarManual(Point position) {
+        avatarPosition = position;
+    }
+
+    public Point getAvatarPosition() {
+        return avatarPosition;
+    }
+
+    public long getSeed() {
+        return dungeonSeed;
     }
 }
 
