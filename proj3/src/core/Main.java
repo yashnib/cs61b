@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Main {
     private static final int WORLD_WIDTH = 90;
     private static final int WORLD_HEIGHT = 50;
+    private static final long INVALID_SEED = -1;
+    private static final long LOAD_GAME_FLAG = -2;
 
     private static final TETile floor = Tileset.DUNGEON_FLOOR;
     private static final TETile wall = Tileset.WALL;
@@ -25,14 +27,14 @@ public class Main {
     private static final TETile portal = Tileset.PORTAL;
     private static final TETile coin = Tileset.COIN;
 
+    // Function to get user input
     private static long getUserInput() {
         JFrame mainFrame = new JFrame("Dungeon Generator Menu");
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setSize(400, 250);
         mainFrame.setLayout(new BorderLayout());
 
-        final long[] seed = new long[1];
-        seed[0] = -1;
+        AtomicLong seed = new AtomicLong(INVALID_SEED);
         CountDownLatch latch = new CountDownLatch(1);
 
         JLabel title = new JLabel("CS61B: BYOW", SwingConstants.CENTER);
@@ -49,13 +51,14 @@ public class Main {
         buttonPanel.add(exitButton);
         mainFrame.add(buttonPanel, BorderLayout.CENTER);
 
-        newGameButton.addActionListener(e -> {
-            JFrame newGameFrame = new JFrame("World Generator Menu");
-            newGameFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            newGameFrame.setSize(400, 150);
-            newGameFrame.setLayout(new BorderLayout());
+        // Shared method to launch seed input frame
+        Runnable showSeedInput = () -> {
+            JFrame seedFrame = new JFrame("Enter Seed");
+            seedFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            seedFrame.setSize(400, 150);
+            seedFrame.setLayout(new BorderLayout());
 
-            JLabel seedLabel = new JLabel("Enter a seed value followed by S:", SwingConstants.CENTER);
+            JLabel seedLabel = new JLabel("Enter a numeric seed followed by 'S':", SwingConstants.CENTER);
             JTextField inputField = new JTextField();
 
             inputField.addKeyListener(new KeyAdapter() {
@@ -63,43 +66,67 @@ public class Main {
                 public void keyPressed(KeyEvent e) {
                     if (e.getKeyChar() == 's' || e.getKeyChar() == 'S') {
                         try {
-                            seed[0] = Long.parseLong(inputField.getText());
-                            newGameFrame.dispose();
+                            seed.set(Long.parseLong(inputField.getText()));
+                            seedFrame.dispose();
                             mainFrame.dispose();
                             latch.countDown();
                         } catch (NumberFormatException ex) {
-                            JOptionPane.showMessageDialog(null, "Invalid seed");
+                            JOptionPane.showMessageDialog(seedFrame, "Invalid seed. Use numbers only.");
                         }
                     }
                 }
             });
 
-            newGameFrame.add(seedLabel, BorderLayout.NORTH);
-            newGameFrame.add(inputField, BorderLayout.CENTER);
-            newGameFrame.setVisible(true);
-        });
+            seedFrame.add(seedLabel, BorderLayout.NORTH);
+            seedFrame.add(inputField, BorderLayout.CENTER);
+            seedFrame.setVisible(true);
+            SwingUtilities.invokeLater(inputField::requestFocusInWindow);
+        };
 
+        // Button actions
+        newGameButton.addActionListener(e -> showSeedInput.run());
         loadGameButton.addActionListener(e -> {
-            seed[0] = -2; // special value indicating load
+            seed.set(LOAD_GAME_FLAG);
             mainFrame.dispose();
             latch.countDown();
         });
+        exitButton.addActionListener(e -> System.exit(0));
 
-        exitButton.addActionListener(e -> {
-            System.exit(0);
+        // Keyboard shortcut support for N, L, Q
+        mainFrame.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                char c = Character.toLowerCase(e.getKeyChar());
+                switch (c) {
+                    case 'n':
+                        showSeedInput.run();
+                        break;
+                    case 'l':
+                        seed.set(LOAD_GAME_FLAG);
+                        mainFrame.dispose();
+                        latch.countDown();
+                        break;
+                    case 'q':
+                        System.exit(0);
+                        break;
+                }
+            }
         });
 
+        mainFrame.setFocusable(true);
+        mainFrame.requestFocusInWindow();
         mainFrame.setVisible(true);
 
         try {
-            latch.await(); // Wait for user to choose
+            latch.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
 
-        return seed[0];
+        return seed.get();
     }
 
+    // Generates the world from the dungeon
     public static void generateWorld(Dungeon inputDungeon) {
         inputDungeon.splitDungeon();
         inputDungeon.createRoom();
@@ -110,6 +137,7 @@ public class Main {
         inputDungeon.placePortals();
     }
 
+    // Initializes the tiles
     public static void initializeWorld(TETile[][] inputTiles) {
         for (int x = 0; x < WORLD_WIDTH; x++) {
             for (int y = 0; y < WORLD_HEIGHT; y++) {
@@ -118,6 +146,7 @@ public class Main {
         }
     }
 
+    // Loads the saved game
     public static void loadGame() {
         TERenderer ter = new TERenderer();
         TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
@@ -135,6 +164,7 @@ public class Main {
         myGameHandler.playGame(ter);
     }
 
+    //
     public static void main(String[] args) {
         TERenderer ter = new TERenderer();
         TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
