@@ -26,6 +26,11 @@ public class Dungeon extends Room {
 
     private TETile[][] dungeonTiles;
 
+    private TETile floor = Tileset.DUNGEON_FLOOR;
+    private TETile wall = Tileset.WALL;
+    private TETile portal = Tileset.PORTAL;
+    private TETile avatar = Tileset.WARRIOR;
+
     public Dungeon(int width, int height, Point position, boolean drawOpposite, long seed) {
         super(width, height, position, drawOpposite);
 
@@ -76,7 +81,7 @@ public class Dungeon extends Room {
 
         // Two children will be generated from the split with both having the same width but different heights
         Point childAPosition = new Point(parentDungeonX, parentDungeonY);
-        this.childA = new Dungeon(parentDungeonWidth, splitY - parentDungeonY, childAPosition,false, this.dungeonRNG.nextLong());
+        this.childA = new Dungeon(parentDungeonWidth, splitY - parentDungeonY, childAPosition, false, this.dungeonRNG.nextLong());
         this.childA = this.childA.splitDungeon();
 
         Point childBPosition = new Point(parentDungeonX, splitY);
@@ -116,12 +121,12 @@ public class Dungeon extends Room {
     }
 
     public Dungeon splitDungeon() {
-        if (this== null) throw new IllegalArgumentException("splitDungeon(): Dungeon instance is null");
+        if (this == null) throw new IllegalArgumentException("splitDungeon(): Dungeon instance is null");
 
         int minDimension = this.getMinRoomDimension();
 
         if ((this.getWidth() <= 3 * minDimension && this.getHeight() <= 3 * minDimension)) {
-          //  parentDungeon.leaf = true;
+            //  parentDungeon.leaf = true;
             return this;
         }
 
@@ -160,6 +165,16 @@ public class Dungeon extends Room {
         }
 
         return this.childB.getRoom();
+    }
+
+    public void placePortals() {
+        for (int i = 1; i < getWidth(); i++) {
+            for (int j = 1; j < getHeight(); j++) {
+                if (dungeonTiles[i][j] == floor && dungeonRNG.nextDouble() < 0.01) {
+                    dungeonTiles[i][j] = portal;
+                }
+            }
+        }
     }
 
     public void createRoom() {
@@ -239,35 +254,34 @@ public class Dungeon extends Room {
             if (r.getDrawOpposite()) {
                 for (int i = r.getX(); i > r.getX() - r.getWidth(); i--) {
                     for (int j = r.getY(); j > r.getY() - r.getHeight(); j--) {
-                        dungeonTiles[i][j] = Tileset.FLOWER;
+                        dungeonTiles[i][j] = floor;
                     }
                 }
             } else {
                 for (int i = r.getX(); i < r.getX() + r.getWidth(); i++) {
                     for (int j = r.getY(); j < r.getY() + r.getHeight(); j++) {
-                        dungeonTiles[i][j] = Tileset.FLOWER;
+                        dungeonTiles[i][j] = floor;
                     }
-                 }
+                }
             }
         }
     }
 
-   public void drawRooms() {
+    public void drawRooms() {
         if (dungeonTiles == null) {
             throw new IllegalArgumentException("drawRooms(): World cannot be null");
         }
         for (Room r : roomsSet) {
-           // if (r.getWidth() == 1) continue;
             for (int i = r.getX(); i < r.getX() + r.getWidth(); i++) {
                 for (int j = r.getY(); j < r.getY() + r.getHeight(); j++) {
-                    dungeonTiles[i][j] = Tileset.FLOWER;
+                    dungeonTiles[i][j] = floor;
                 }
             }
         }
     }
 
     public void createHallways() {
-       if (this == null || this.isLeaf()) {
+        if (this == null || this.isLeaf()) {
             return;
         }
 
@@ -288,32 +302,32 @@ public class Dungeon extends Room {
 
         for (int i = 0; i < dungeonTiles.length; i++) {
             for (int j = 0; j < dungeonTiles[0].length; j++) {
-                if (dungeonTiles[i][j] == Tileset.FLOWER) {
+                if (dungeonTiles[i][j] == floor) {
                     if (dungeonTiles[i - 1][j] == Tileset.NOTHING) {
-                        dungeonTiles[i - 1][j] = Tileset.WALL;
+                        dungeonTiles[i - 1][j] = wall;
                     }
                     if (dungeonTiles[i + 1][j] == Tileset.NOTHING) {
-                        dungeonTiles[i + 1][j] = Tileset.WALL;
+                        dungeonTiles[i + 1][j] = wall;
                     }
-                    if (dungeonTiles[i][j - 1] ==  Tileset.NOTHING) {
-                        dungeonTiles[i][j - 1] = Tileset.WALL;
+                    if (dungeonTiles[i][j - 1] == Tileset.NOTHING) {
+                        dungeonTiles[i][j - 1] = wall;
                     }
                     if (dungeonTiles[i][j + 1] == Tileset.NOTHING) {
-                        dungeonTiles[i][j + 1] = Tileset.WALL;
+                        dungeonTiles[i][j + 1] = wall;
                     }
                 }
-             }
-         }
+            }
+        }
     }
 
     public void placeAvatarRandom() {
         int avatarX = this.dungeonRNG.nextInt(1, this.getWidth());
         int avatarY = this.dungeonRNG.nextInt(1, this.getHeight());
-        while (dungeonTiles[avatarX][avatarY] != Tileset.FLOWER) {
+        while (dungeonTiles[avatarX][avatarY] != floor) {
             avatarX = this.dungeonRNG.nextInt(1, this.getWidth());
             avatarY = this.dungeonRNG.nextInt(1, this.getHeight());
         }
-        dungeonTiles[avatarX][avatarY] = Tileset.AVATAR;
+        dungeonTiles[avatarX][avatarY] = avatar;
         avatarPosition = new Point(avatarX, avatarY);
     }
 

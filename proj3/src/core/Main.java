@@ -15,10 +15,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-
 public class Main {
     private static final int WORLD_WIDTH = 90;
     private static final int WORLD_HEIGHT = 50;
+
+    private static final TETile floor = Tileset.DUNGEON_FLOOR;
+    private static final TETile wall = Tileset.WALL;
+    private static final TETile avatar = Tileset.WARRIOR;
+    private static final TETile portal = Tileset.PORTAL;
+    private static final TETile coin = Tileset.COIN;
 
     private static long getUserInput() {
         JFrame mainFrame = new JFrame("Dungeon Generator Menu");
@@ -30,15 +35,11 @@ public class Main {
         seed[0] = -1;
         CountDownLatch latch = new CountDownLatch(1);
 
-        // Title
         JLabel title = new JLabel("CS61B: BYOW", SwingConstants.CENTER);
         title.setFont(new Font("Serif", Font.BOLD, 24));
         mainFrame.add(title, BorderLayout.NORTH);
 
-        // Buttons
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(3, 1, 10, 10));
-
+        JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 10, 10));
         JButton newGameButton = new JButton("(N) New Game");
         JButton loadGameButton = new JButton("(L) Load Game");
         JButton exitButton = new JButton("(Q) Quit Game");
@@ -46,25 +47,17 @@ public class Main {
         buttonPanel.add(newGameButton);
         buttonPanel.add(loadGameButton);
         buttonPanel.add(exitButton);
-
         mainFrame.add(buttonPanel, BorderLayout.CENTER);
 
-        // Button Actions
         newGameButton.addActionListener(e -> {
             JFrame newGameFrame = new JFrame("World Generator Menu");
-            newGameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            newGameFrame.setSize(400, 250);
+            newGameFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            newGameFrame.setSize(400, 150);
             newGameFrame.setLayout(new BorderLayout());
 
-            // Title
-            JLabel newGameTitle = new JLabel("CS61B: BYOW", SwingConstants.CENTER);
-            newGameTitle.setFont(new Font("Serif", Font.BOLD, 24));
-            newGameFrame.add(newGameTitle, BorderLayout.NORTH);
-
-            JLabel seedLabel = new JLabel("Enter a seed value followed by S:");
-            seedLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            newGameFrame.add(seedLabel, BorderLayout.NORTH);
+            JLabel seedLabel = new JLabel("Enter a seed value followed by S:", SwingConstants.CENTER);
             JTextField inputField = new JTextField();
+
             inputField.addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
@@ -80,20 +73,16 @@ public class Main {
                     }
                 }
             });
+
+            newGameFrame.add(seedLabel, BorderLayout.NORTH);
             newGameFrame.add(inputField, BorderLayout.CENTER);
-
-            // Buttons
-            JPanel newGameButtonPanel = new JPanel();
-            newGameButtonPanel.setLayout(new GridLayout(3, 1, 10, 10));
-
             newGameFrame.setVisible(true);
         });
 
         loadGameButton.addActionListener(e -> {
-            new Thread(() -> {
-                loadGame(); // run on a background thread
-            }).start();
+            seed[0] = -2; // special value indicating load
             mainFrame.dispose();
+            latch.countDown();
         });
 
         exitButton.addActionListener(e -> {
@@ -103,7 +92,7 @@ public class Main {
         mainFrame.setVisible(true);
 
         try {
-            latch.await(); // Block until user presses S
+            latch.await(); // Wait for user to choose
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -118,6 +107,7 @@ public class Main {
         inputDungeon.drawRooms();
         inputDungeon.drawHallways();
         inputDungeon.drawWalls();
+        inputDungeon.placePortals();
     }
 
     public static void initializeWorld(TETile[][] inputTiles) {
@@ -129,39 +119,41 @@ public class Main {
     }
 
     public static void loadGame() {
-        TERenderer ter1 = new TERenderer();
+        TERenderer ter = new TERenderer();
         TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
-        ter1.initialize(WORLD_WIDTH, WORLD_HEIGHT);
+        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
         initializeWorld(world);
+
         Dungeon savedDungeon = GameHandler.loadDungeon();
         savedDungeon.setDungeonTiles(world);
-        Point avatarPosition = savedDungeon.getAvatarPosition();
         generateWorld(savedDungeon);
-        world[avatarPosition.getX()][avatarPosition.getY()] = Tileset.AVATAR;
+
+        Point avatarPosition = savedDungeon.getAvatarPosition();
+        world[avatarPosition.getX()][avatarPosition.getY()] = avatar;
+
         GameHandler myGameHandler = new GameHandler(savedDungeon);
-        myGameHandler.playGame(avatarPosition, ter1);
+        myGameHandler.playGame(ter);
     }
+
     public static void main(String[] args) {
         TERenderer ter = new TERenderer();
         TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
-
         initializeWorld(world);
 
         long seed = getUserInput();
 
-       if (seed != -1) {
+        if (seed == -2) {
+            loadGame();
+        } else if (seed != -1) {
             ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
             Point worldPosition = new Point(1, 1);
             Dungeon myDungeon = new Dungeon(WORLD_WIDTH, WORLD_HEIGHT, worldPosition, false, seed);
             myDungeon.setDungeonTiles(world);
             generateWorld(myDungeon);
             myDungeon.placeAvatarRandom();
-            Point curAvatarPosition = myDungeon.getAvatarPosition();
+
             GameHandler myGameHandler = new GameHandler(myDungeon);
-            myGameHandler.playGame(curAvatarPosition, ter);
-       }
-
-        loadGame();
-
+            myGameHandler.playGame(ter);
+        }
     }
 }
