@@ -7,7 +7,9 @@ import tileengine.Tileset;
 import utils.FileUtils;
 
 import java.awt.*;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 public class GameHandler {
     private static final String SAVE_FILE = "src/save.txt";
@@ -23,6 +25,7 @@ public class GameHandler {
 
     // Coin dungeon state
     private boolean enterCoinDungeon = false;
+    private int coinDungeonWon = 0;
 
     // Tiles
     private final TETile floor = Tileset.DUNGEON_FLOOR;
@@ -43,29 +46,67 @@ public class GameHandler {
 
     // Saves basic game state info to file
     public void saveGame() {
-        StringBuilder boardState = new StringBuilder(
-                gameWidth + " " + gameHeight + " " + gameSeed + " " +
-                        gameDungeon.getX() + " " + gameDungeon.getY() + " " +
-                        avatarPosition.getX() + " " + avatarPosition.getY() + "\n"
-        );
+        StringBuilder boardState = new StringBuilder();
+        boardState.append("width ").append(gameWidth).append("\n");
+        boardState.append("height ").append(gameHeight).append("\n");
+        boardState.append("seed ").append(gameSeed).append("\n");
+        boardState.append("dungeonX ").append(gameDungeon.getX()).append("\n");
+        boardState.append("dungeonY ").append(gameDungeon.getY()).append("\n");
+        boardState.append("avatarX ").append(avatarPosition.getX()).append("\n");
+        boardState.append("avatarY ").append(avatarPosition.getY()).append("\n");
+
+        // Save portal positions
+        boardState.append("portals ");
+        for (Point p : gameDungeon.getPortals()) {
+            boardState.append(p.getX()).append(",").append(p.getY()).append(" ");
+        }
+        boardState.append("\n");
+
         FileUtils.writeFile(SAVE_FILE, boardState.toString());
     }
 
     // Loads dungeon state from saved file and reconstructs a Dungeon instance
     public static Dungeon loadDungeon() {
         String boardState = FileUtils.readFile(SAVE_FILE);
-        String[] boardFeatures = boardState.split("\n")[0].split(" ");
+        String[] lines = boardState.split("\n");
 
-        int width = Integer.parseInt(boardFeatures[0]);
-        int height = Integer.parseInt(boardFeatures[1]);
-        long seed = Long.parseLong(boardFeatures[2]);
-        int gameX = Integer.parseInt(boardFeatures[3]);
-        int gameY = Integer.parseInt(boardFeatures[4]);
-        int avatarX = Integer.parseInt(boardFeatures[5]);
-        int avatarY = Integer.parseInt(boardFeatures[6]);
+        int width = 0, height = 0, dungeonX = 0, dungeonY = 0, avatarX = 0, avatarY = 0;
+        long seed = 0;
+        Set<Point> portalPositions = new HashSet<>();
 
-        Dungeon retDungeon = new Dungeon(width, height, new Point(gameX, gameY), false, seed);
+        for (String line : lines) {
+            if (line.startsWith("width")) {
+                width = Integer.parseInt(line.split(" ")[1]);
+            } else if (line.startsWith("height")) {
+                height = Integer.parseInt(line.split(" ")[1]);
+            } else if (line.startsWith("seed")) {
+                seed = Long.parseLong(line.split(" ")[1]);
+            } else if (line.startsWith("dungeonX")) {
+                dungeonX = Integer.parseInt(line.split(" ")[1]);
+            } else if (line.startsWith("dungeonY")) {
+                dungeonY = Integer.parseInt(line.split(" ")[1]);
+            } else if (line.startsWith("avatarX")) {
+                avatarX = Integer.parseInt(line.split(" ")[1]);
+            } else if (line.startsWith("avatarY")) {
+                avatarY = Integer.parseInt(line.split(" ")[1]);
+            } else if (line.startsWith("portals")) {
+                String[] parts = line.substring(8).trim().split(" ");
+                for (String part : parts) {
+                    String[] coords = part.split(",");
+                    int x = Integer.parseInt(coords[0]);
+                    int y = Integer.parseInt(coords[1]);
+                    portalPositions.add(new Point(x, y));
+                }
+            }
+        }
+
+        // Rebuild the Dungeon
+        Dungeon retDungeon = new Dungeon(width, height, new Point(dungeonX, dungeonY), false, seed);
         retDungeon.placeAvatarManual(new Point(avatarX, avatarY));
+
+        // Assign portals in the Dungeon
+        retDungeon.setPortals(portalPositions);
+
         return retDungeon;
     }
 
@@ -81,13 +122,22 @@ public class GameHandler {
     }
 
     // Displays a temporary overlay message
-    public void displayMessage(String message, Color color) {
+    public void displayMessage(String message, Color color, int pauseTime) {
         StdDraw.clear(Color.BLACK);
         StdDraw.setFont(new Font("Monaco", Font.BOLD, 16));
         StdDraw.setPenColor(color);
-        StdDraw.text(gameWidth / 2.0, gameHeight / 2.0, message);
+
+        String[] lines = message.split("\n");
+        double lineHeight = 1.0; // Adjust for spacing
+        double startY = gameHeight / 2.0 + (lines.length / 2.0) * lineHeight;
+
+        for (int i = 0; i < lines.length; i++) {
+            double y = startY - i * lineHeight;
+            StdDraw.text(gameWidth / 2.0, y, lines[i]);
+        }
+
         StdDraw.show();
-        StdDraw.pause(2000);
+        StdDraw.pause(pauseTime); // Show for 4 seconds (increase for longer messages)
         StdDraw.clear();
     }
 
@@ -181,7 +231,8 @@ public class GameHandler {
         }
 
         // Post-game feedback
-        displayMessage(score == coinCount ? "You got them all!" : "So close.... But not enough!", Color.WHITE);
+        displayMessage(score == coinCount ? "You got them all!" : "So close.... But not enough!", Color.WHITE, 4000);
+        if (score == coinCount) coinDungeonWon++;
         avatarPosition = oldAvatarPosition;
     }
 
@@ -190,6 +241,7 @@ public class GameHandler {
         avatarPosition = gameDungeon.getAvatarPosition();
         boolean colonPressed = false;
         boolean lineOfSight = false;
+        int numPortals = 10;
 
         while (true) {
             int avatarX = avatarPosition.getX();
@@ -211,10 +263,10 @@ public class GameHandler {
                             System.exit(0);
                         }
                         break;
-                    case 'w': dy = 1; moveAttempted = true; break;
-                    case 'a': dx = -1; moveAttempted = true; break;
-                    case 's': dy = -1; moveAttempted = true; break;
-                    case 'd': dx = 1; moveAttempted = true; break;
+                    case 'w': dy = 1; break;
+                    case 'a': dx = -1; break;
+                    case 's': dy = -1; break;
+                    case 'd': dx = 1; break;
                     case 'l': lineOfSight = !lineOfSight; break;
                     default: break;
                 }
@@ -223,19 +275,27 @@ public class GameHandler {
                     colonPressed = false;
                 }
 
-                if (moveAttempted) {
-                    int newX = avatarX + dx;
-                    int newY = avatarY + dy;
-                    if (gameTiles[newX][newY] == portal) {
-                        enterCoinDungeon = true;
+                int newX = avatarX + dx;
+                int newY = avatarY + dy;
+
+                if (gameDungeon.getPortals().isEmpty()) {
+                    if (coinDungeonWon == numPortals) {
+                        displayMessage("Victory! You’ve conquered the dungeon and claimed every coin.", Color.WHITE, 4000);
                     } else {
-                        avatarPosition = move(avatarPosition, dx, dy, avatar, gameTiles);
+                        displayMessage("The dungeon devours the unworthy. Better luck next time.", Color.WHITE, 4000);
                     }
+                    System.exit(0);
                 }
+
+                if (gameTiles[newX][newY] == portal) {
+                    gameDungeon.removePortal(new Point(newX, newY));
+                    enterCoinDungeon = true;
+                }
+                avatarPosition = move(avatarPosition, dx, dy, avatar, gameTiles);
             }
 
             if (enterCoinDungeon) {
-                displayMessage("You've entered a coin dungeon and have 10 seconds to collect all the coins", Color.WHITE);
+                displayMessage("You've entered a coin dungeon and have 10 seconds to collect all the coins.", Color.WHITE, 4000);
                 playGameCoinDungeon(ter);
                 enterCoinDungeon = false;
             }
