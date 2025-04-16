@@ -134,16 +134,24 @@ public class Main {
         inputDungeon.drawRooms();
         inputDungeon.drawHallways();
         inputDungeon.drawWalls();
-        inputDungeon.placePortals();
     }
 
-    // Initializes the tiles
-    public static void initializeWorld(TETile[][] inputTiles) {
-        for (int x = 0; x < WORLD_WIDTH; x++) {
-            for (int y = 0; y < WORLD_HEIGHT; y++) {
-                inputTiles[x][y] = Tileset.NOTHING;
-            }
-        }
+    public static void newGame(long seed) {
+        TERenderer ter = new TERenderer();
+        TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
+        ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
+        Point worldPosition = new Point(1, 1);
+        Dungeon myDungeon = new Dungeon(WORLD_WIDTH, WORLD_HEIGHT, worldPosition, false, seed);
+        myDungeon.setDungeonTiles(world);
+        myDungeon.initializeDungeon();
+        generateWorld(myDungeon);
+        myDungeon.placePortals();
+        myDungeon.drawPortals();
+        myDungeon.placeAvatarRandom();
+
+        GameHandler myGameHandler = new GameHandler(myDungeon);
+        myGameHandler.displayMessage("10 Ancient portals shimmer before you.\n Step through one, and you'll enter a hidden coin dungeon — a place of wealth, but also urgency.\n Each gives you just 10 seconds. Fail to gather all coins in time, and the portal collapses forever.\n Conquer them all. Leave none behind.\n Only then will the dungeon deem you worthy.", Color.WHITE, 10000);
+        myGameHandler.playGame(ter);
     }
 
     // Loads the saved game
@@ -151,11 +159,12 @@ public class Main {
         TERenderer ter = new TERenderer();
         TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
         ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
-        initializeWorld(world);
 
         Dungeon savedDungeon = GameHandler.loadDungeon();
         savedDungeon.setDungeonTiles(world);
+        savedDungeon.initializeDungeon();
         generateWorld(savedDungeon);
+        savedDungeon.drawPortals();
 
         Point avatarPosition = savedDungeon.getAvatarPosition();
         world[avatarPosition.getX()][avatarPosition.getY()] = avatar;
@@ -166,24 +175,15 @@ public class Main {
 
     //
     public static void main(String[] args) {
-        TERenderer ter = new TERenderer();
+        //TERenderer ter = new TERenderer();
         TETile[][] world = new TETile[WORLD_WIDTH][WORLD_HEIGHT];
-        initializeWorld(world);
 
         long seed = getUserInput();
 
         if (seed == -2) {
             loadGame();
         } else if (seed != -1) {
-            ter.initialize(WORLD_WIDTH, WORLD_HEIGHT);
-            Point worldPosition = new Point(1, 1);
-            Dungeon myDungeon = new Dungeon(WORLD_WIDTH, WORLD_HEIGHT, worldPosition, false, seed);
-            myDungeon.setDungeonTiles(world);
-            generateWorld(myDungeon);
-            myDungeon.placeAvatarRandom();
-
-            GameHandler myGameHandler = new GameHandler(myDungeon);
-            myGameHandler.playGame(ter);
+            newGame(seed);
         }
     }
 }

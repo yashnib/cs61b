@@ -18,9 +18,11 @@ public class Dungeon extends Room {
 
     private Room room;
 
-    private static Set<Room> hallwaysSet = new HashSet<>();
+    private static Set<Room> hallwaysSet;
 
-    private static Set<Room> roomsSet = new HashSet<>();
+    private Set<Point> portalsSet;
+
+    private static Set<Room> roomsSet;
 
     private Point avatarPosition;
 
@@ -41,6 +43,10 @@ public class Dungeon extends Room {
         childB = null;
 
         room = null;
+
+        hallwaysSet = new HashSet<>();
+        portalsSet = new HashSet<>();
+        roomsSet = new HashSet<>();
     }
 
     public boolean isLeaf() {
@@ -53,6 +59,14 @@ public class Dungeon extends Room {
 
     public void setDungeonTiles(TETile[][] tiles) {
         dungeonTiles = tiles;
+    }
+
+    public void initializeDungeon() {
+        for (int x = 0; x < getWidth(); x++) {
+            for (int y = 0; y < getHeight(); y++) {
+                dungeonTiles[x][y] = Tileset.NOTHING;
+            }
+        }
     }
 
     public TETile[][] getDungeonTiles() {
@@ -168,13 +182,46 @@ public class Dungeon extends Room {
     }
 
     public void placePortals() {
-        for (int i = 1; i < getWidth(); i++) {
-            for (int j = 1; j < getHeight(); j++) {
-                if (dungeonTiles[i][j] == floor && dungeonRNG.nextDouble() < 0.01) {
-                    dungeonTiles[i][j] = portal;
-                }
+        int numPortals = 10;
+        int placed = 0;
+
+        int dungeonWidth = getWidth();
+        int dungeonHeight = getHeight();
+
+        while (placed < numPortals) {
+            int x = dungeonRNG.nextInt(dungeonWidth);
+            int y = dungeonRNG.nextInt(dungeonHeight);
+
+            if (dungeonTiles[x][y] == floor) {
+                portalsSet.add(new Point(x, y));
+                placed++;
             }
         }
+    }
+
+    public void drawPortals() {
+        if (portalsSet == null || portalsSet.isEmpty()) {
+            return;
+        }
+
+        for (Point p : portalsSet) {
+            int x = p.getX();
+            int y = p.getY();
+            dungeonTiles[x][y] = portal;
+        }
+    }
+
+    public Set<Point> getPortals() {
+        return portalsSet;
+    }
+
+    public void setPortals(Set<Point> portals) {
+        portalsSet = portals;
+    }
+
+    public void removePortal(Point portal) {
+        if (portalsSet == null) return;
+        portalsSet.remove(portal);
     }
 
     public void createRoom() {
