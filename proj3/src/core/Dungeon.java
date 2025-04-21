@@ -18,11 +18,11 @@ public class Dungeon extends Room {
 
     private Room room;
 
-    private static Set<Room> hallwaysSet;
+   // private Set<Room> hallwaysSet;
 
     private Set<Point> portalsSet;
 
-    private static Set<Room> roomsSet;
+  //  private Set<Room> roomsSet;
 
     private Point avatarPosition;
 
@@ -44,9 +44,9 @@ public class Dungeon extends Room {
 
         room = null;
 
-        hallwaysSet = new HashSet<>();
+      //  hallwaysSet = new HashSet<>();
         portalsSet = new HashSet<>();
-        roomsSet = new HashSet<>();
+      //  roomsSet = new HashSet<>();
     }
 
     public boolean isLeaf() {
@@ -224,9 +224,9 @@ public class Dungeon extends Room {
         portalsSet.remove(portal);
     }
 
-    public void createRoom() {
+    public Set<Room> createRoom(Set<Room> rooms) {
         if (this == null) {
-            return;
+            return rooms;
         }
 
         if (this.isLeaf()) {
@@ -239,14 +239,15 @@ public class Dungeon extends Room {
 
             Point roomPosition = new Point(roomX, roomY);
             this.room = new Room(roomWidth, roomHeight, roomPosition, false);
-            roomsSet.add(this.room);
+            rooms.add(this.room);
         } else {
-            this.childA.createRoom();
-            this.childB.createRoom();
+            this.childA.createRoom(rooms);
+            this.childB.createRoom(rooms);
         }
+        return rooms;
     }
 
-    public void connectRooms(Room roomA, Room roomB) {
+    public Set<Room> connectRooms(Room roomA, Room roomB, Set<Room> hallways) {
         if (roomA == null || roomB == null) {
             throw new IllegalArgumentException("connectRooms(): room arguments cannot be null");
         }
@@ -269,35 +270,36 @@ public class Dungeon extends Room {
         if (left == roomAX) {
             if (bottom == roomAY) {
                 Point verticalHallwayPosition = new Point(roomAX, roomAY);
-                hallwaysSet.add(new Room(1, top - bottom + 1, verticalHallwayPosition, false));
+                hallways.add(new Room(1, top - bottom + 1, verticalHallwayPosition, false));
                 Point horizontalHallwayPosition = new Point(roomAX, top);
-                hallwaysSet.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
+                hallways.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
             } else {
                 Point horizontalHallwayPosition = new Point(roomAX, roomAY);
-                hallwaysSet.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
+                hallways.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
                 Point verticalHallwayPosition = new Point(right, roomAY);
-                hallwaysSet.add(new Room(1, top - bottom + 1, verticalHallwayPosition, true));
+                hallways.add(new Room(1, top - bottom + 1, verticalHallwayPosition, true));
             }
         } else {
             if (bottom == roomBY) {
                 Point verticalHallwayPosition = new Point(roomBX, roomBY);
-                hallwaysSet.add(new Room(1, top - bottom + 1, verticalHallwayPosition, false));
+                hallways.add(new Room(1, top - bottom + 1, verticalHallwayPosition, false));
                 Point horizontalHallwayPosition = new Point(right, roomBY);
-                hallwaysSet.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
+                hallways.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
             } else {
                 Point horizontalHallwayPosition = new Point(roomBX, roomBY);
-                hallwaysSet.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
+                hallways.add(new Room(right - left + 1, 1, horizontalHallwayPosition, false));
                 Point verticalHallwayPosition = new Point(right, roomBY);
-                hallwaysSet.add(new Room(1, top - bottom + 1, verticalHallwayPosition, true));
+                hallways.add(new Room(1, top - bottom + 1, verticalHallwayPosition, true));
             }
         }
+        return hallways;
     }
 
-    public void drawHallways() {
+    public void drawHallways(Set<Room> hallways) {
         if (dungeonTiles == null) {
             throw new IllegalArgumentException("drawHallways(): World cannot be null");
         }
-        for (Room r : hallwaysSet) {
+        for (Room r : hallways) {
             if (r.getDrawOpposite()) {
                 for (int i = r.getX(); i > r.getX() - r.getWidth(); i--) {
                     for (int j = r.getY(); j > r.getY() - r.getHeight(); j--) {
@@ -314,11 +316,11 @@ public class Dungeon extends Room {
         }
     }
 
-    public void drawRooms() {
+    public void drawRooms(Set<Room> rooms) {
         if (dungeonTiles == null) {
             throw new IllegalArgumentException("drawRooms(): World cannot be null");
         }
-        for (Room r : roomsSet) {
+        for (Room r : rooms) {
             for (int i = r.getX(); i < r.getX() + r.getWidth(); i++) {
                 for (int j = r.getY(); j < r.getY() + r.getHeight(); j++) {
                     dungeonTiles[i][j] = floor;
@@ -327,19 +329,19 @@ public class Dungeon extends Room {
         }
     }
 
-    public void createHallways() {
+    public Set<Room> createHallways(Set<Room> hallways) {
         if (this == null || this.isLeaf()) {
-            return;
+            return hallways;
         }
 
         Room childARoom = this.childA.getRoom();
         Room childBRoom = this.childB.getRoom();
 
-        connectRooms(childARoom, childBRoom);
+        connectRooms(childARoom, childBRoom, hallways);
 
-        this.childA.createHallways();
-        this.childB.createHallways();
-
+        this.childA.createHallways(hallways);
+        this.childB.createHallways(hallways);
+        return hallways;
     }
 
     public void drawWalls() {

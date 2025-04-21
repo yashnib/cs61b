@@ -128,11 +128,13 @@ public class Main {
 
     // Generates the world from the dungeon
     public static void generateWorld(Dungeon inputDungeon) {
+        Set<Room> rooms = new HashSet<>();
+        Set<Room> hallways = new HashSet<>();
         inputDungeon.splitDungeon();
-        inputDungeon.createRoom();
-        inputDungeon.createHallways();
-        inputDungeon.drawRooms();
-        inputDungeon.drawHallways();
+        rooms = inputDungeon.createRoom(rooms);
+        hallways = inputDungeon.createHallways(hallways);
+        inputDungeon.drawRooms(rooms);
+        inputDungeon.drawHallways(hallways);
         inputDungeon.drawWalls();
     }
 
